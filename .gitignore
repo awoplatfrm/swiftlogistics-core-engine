@@ -1,0 +1,14 @@
+/venv
+.venv/
+env/
+.env
+*.env
+*.db
+*.sqlite3
+__apache__/
+*.pyc
+.pytestcache/
+
+
+.vscode/
+.idea/
