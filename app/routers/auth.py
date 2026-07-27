@@ -1,18 +1,18 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from fastapi import FastAPI, HTTPException, status, Depends, Response, Cookie
-from app.models import RegisterMerchants
+from fastapi import FastAPI, HTTPException, status, Depends, Response, Cookie, APIRouter
+from fastapi.security import OAuth2PasswordRequestForm
+from app.models import Merchants
 from jose import jwt, JWTError
 from app.schema import (
-    RegisterMerchant,
+    MerchantIn,
     LoginMerchant,
-    MerchantTokenResponse,
-    RegisterMerchantResponse,
+    MerchantTokenOut,
+    MerchantOut,
 )
-from app.database import ASYNC_ENGINE, Base, session_local
+from app.database import ASYNC_ENGINE, Base, db_conn
 from contextlib import asynccontextmanager
 from datetime import timedelta
-from typing import AsyncGenerator
 from app.core.security import (
     hash_password,
     verify_password,
@@ -30,38 +30,22 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="swiftlogistics core engine", lifespan=lifespan, version="1.0.0")
-
-
-async def db_conn() -> AsyncGenerator[AsyncSession, None]:
-    async with session_local() as session:
-        yield session
+router = APIRouter(prefix="/auth")
 
 
 async def check_email(email: str, db: AsyncSession):
 
-    statement = select(RegisterMerchants).where(RegisterMerchants.email == email)
+    statement = select(Merchants).where(Merchants.email == email)
     exist = await db.execute(statement=statement)
     return exist.scalars().first()
 
 
-@app.get("/")
-async def root():
-    return {
-        "message": "Welcome to SwiftLogistics API",
-        "docs": "Visit /docs for the interactive API documentation",
-        "status": "online",
-    }
-
-
-@app.post(
-    "/api/v1/register-merchant",
-    response_model=RegisterMerchantResponse,
+@router.post(
+    "/register-merchant",
+    response_model=MerchantOut,
     status_code=status.HTTP_201_CREATED,
 )
-async def register_merchant(
-    payload: RegisterMerchant, db: AsyncSession = Depends(db_conn)
-):
+async def register_merchant(payload: MerchantIn, db: AsyncSession = Depends(db_conn)):
 
     email_exist = await check_email(payload.email, db)
     if email_exist:
@@ -72,7 +56,7 @@ async def register_merchant(
 
     pass_to_hash = hash_password(payload.password)
 
-    new_merchant = RegisterMerchants(
+    new_merchant = Merchants(
         business_name=payload.business_name,
         email=payload.email,
         phone_number=payload.phone_number,
@@ -85,26 +69,34 @@ async def register_merchant(
     return new_merchant
 
 
-@app.post(
-    "/api/v1/login-merchant",
-    response_model=MerchantTokenResponse,
+@router.post(
+    "/login-merchant",
+    response_model=MerchantTokenOut,
     status_code=status.HTTP_200_OK,
 )
 async def login_merchant(
-    response: Response, payload: LoginMerchant, db: AsyncSession = Depends(db_conn)
+    response: Response,
+    payload: OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(db_conn),
 ):
 
-    merchant = await check_email(payload.email, db)
+    email = payload.username
+    password = payload.password
+    merchant = await check_email(email, db)
 
-    if not merchant or not verify_password(payload.password, merchant.hashed_password):
+    if not merchant or not verify_password(password, merchant.hashed_password):
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="email or password is incorrrect",
         )
 
-    access_token = create_access_token({"sub": str(merchant.id)}, timedelta(minutes=5))
-    refresh_token = create_refresh_token({"sub": str(merchant.id)}, timedelta(days=7))
+    access_token = create_access_token(
+        {"sub": str(merchant.id), "token_type": "access"}, timedelta(minutes=5)
+    )
+    refresh_token = create_refresh_token(
+        {"sub": str(merchant.id), "token_type": "refresh"}, timedelta(days=7)
+    )
 
     merchant.is_loggedin = True
 
@@ -125,7 +117,7 @@ async def login_merchant(
     }
 
 
-@app.post("/api/v1/refresh")
+@router.post("/refresh")
 async def verify_refresh_token(
     response: Response,
     refresh_token: str | None = Cookie(None),
@@ -140,7 +132,7 @@ async def verify_refresh_token(
     try:
 
         payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=ALGORITHM)
-        if payload.get("type") != "refresh":
+        if payload.get("token_type") != "refresh":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token type"
             )
@@ -151,7 +143,7 @@ async def verify_refresh_token(
 
         raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
 
-    data = {"sub": str(merchant_id)}
+    data = {"sub": str(merchant_id), "token_type": "refresh"}
     new_token = create_access_token(data, timedelta(minutes=30))
 
     return {"access_token": new_token, "token_type": "Bearer"}

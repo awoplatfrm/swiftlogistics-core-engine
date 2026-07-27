@@ -13,7 +13,7 @@ from sqlalchemy.orm import relationship, mapped_column, Mapped
 from app.database import Base
 
 
-class RegisterMerchants(Base):
+class Merchants(Base):
     __tablename__ = "merchants"
     id = Column(Integer, primary_key=True, index=True)
     business_name = Column(String(100), nullable=False)
@@ -27,22 +27,55 @@ class RegisterMerchants(Base):
     account_created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
-    shipments: Mapped[list["RegisterShipments"]] = relationship(
-        "RegisterShipments", back_populates="merchant", cascade="all, delete-orphan"
+    shipments: Mapped[list["Shipments"]] = relationship(
+        "Shipments", back_populates="merchant", cascade="all, delete-orphan"
     )
 
 
-class RegisterShipments(Base):
+class Shipments(Base):
     __tablename__ = "shipments"
-    id = Column(Integer, primary_key=True, index=True)
-    merchant_id = Column(String, ForeignKey("merchants.id"), nullable=False)
+    id = Column(Integer, primary_key=True)
+    merchant_id = Column(
+        Integer,
+        ForeignKey("merchants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sender_id = Column(Integer, ForeignKey("senders.id"), nullable=False)
+    recipient_id = Column(Integer, ForeignKey("recipients.id"), nullable=False)
     description = Column(String(255), nullable=True)
     total_weight = Column(Float, nullable=False)
     dimensions = Column(JSON, nullable=True)
     parcels = Column(JSON, nullable=False, default=list)
+    status = Column(String, nullable=False)
     account_created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
-    merchant: Mapped[list["RegisterMerchants"]] = relationship(
-        "RegisterMerchants", back_populates="shipments"
-    )
+    merchant = relationship("Merchants", back_populates="shipments")
+    sender = relationship("Sender", lazy="selectin")
+    recipient = relationship("Recipient", lazy="selectin")
+
+
+class Sender(Base):
+    __tablename__ = "senders"
+    id = Column(Integer, primary_key=True, index=True)
+    full_name = Column(String(255), nullable=False)
+    email = Column(String, unique=False)
+    phone_number = Column(String, unique=False)
+    address = Column(String, nullable=False)
+    city = Column(String, nullable=False)
+    state = Column(String, nullable=False)
+    country = Column(String, nullable=False)
+
+
+class Recipient(Base):
+    __tablename__ = "recipients"
+
+    id = Column(Integer, primary_key=True, index=True)
+    full_name = Column(String(255), nullable=False)
+    email = Column(String, unique=False)
+    phone_number = Column(String, unique=False)
+    address = Column(String, nullable=False)
+    city = Column(String, nullable=False)
+    state = Column(String, nullable=False)
+    country = Column(String, nullable=False)
