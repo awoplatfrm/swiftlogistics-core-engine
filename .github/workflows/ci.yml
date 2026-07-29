@@ -14,9 +14,10 @@ jobs:
     env:
       # Isolated environment variables for CI test execution
       DATABASE_URL: "sqlite+aiosqlite:///:memory:"
-      SECRET_KEY: "ci_test_secret_key_swiftlogistics"
+      TOKEN_KEY: "awoplatfrm"
       ALGORITHM: "HS256"
-      ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+      ACCESS_TOKEN_EXPIRE: "30"
+      REFRESH_TOKEN_EXPIRE: "7200"
 
     steps:
       - name: Check out repository
