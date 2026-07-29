@@ -12,7 +12,12 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir  --upgrade pip && pip install --no-cache-dir -r requirements.txt
 # 6. Copy the rest of your app's code into /app
 COPY . .
+# Copy the entrypoint script and make sure it's executable inside Docker
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x entrypoint.sh
 # 7. Expose port 8000
 EXPOSE 8000
+
+ENTRYPOINT [ "/entrypoint.sh" ]
 # 8. Command to start Uvicorn when the container boots
-CMD [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000" ]
+CMD [ "gunicorn", "app.main:app", "-w","4","-k" "uvicorn.workers.UvicornWorker", "-b" "--host", "0.0.0.0:8000" ]
