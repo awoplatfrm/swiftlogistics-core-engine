@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException, status, Depends, Response, Cookie, A
 from fastapi.security import OAuth2PasswordRequestForm
 from app.models import Merchants
 from jose import jwt, JWTError
+from app.core.config import settings
 from app.schema import (
     MerchantIn,
     LoginMerchant,
@@ -18,8 +19,6 @@ from app.core.security import (
     verify_password,
     create_access_token,
     create_refresh_token,
-    ALGORITHM,
-    SECRET_KEY,
 )
 
 
@@ -131,7 +130,9 @@ async def verify_refresh_token(
 
     try:
 
-        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=ALGORITHM)
+        payload = jwt.decode(
+            refresh_token, settings.TOKEN_KEY, algorithms=settings.ALGORITHM
+        )
         if payload.get("token_type") != "refresh":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token type"

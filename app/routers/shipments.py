@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException, Depends, status, APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 from app.core.security import get_current_merchant
+from app.core.config import settings
 from app.database import Base, ASYNC_ENGINE, db_conn
 from app.models import Shipments, Sender, Recipient
 from app.schema import (
@@ -10,10 +10,8 @@ from app.schema import (
     ShipmentOut,
     ShipmentsUpdateIn,
     ShipmentUpdateOut,
-    PaginatedShipments,
 )
 from contextlib import asynccontextmanager
-from typing import Optional
 
 
 @asynccontextmanager
@@ -23,7 +21,7 @@ async def lifespan(app: FastAPI):
         yield
 
 
-app = FastAPI(title="swiftlogistics core engine", version="1.1.0")
+app = FastAPI(title=settings.APP_NAME, version="1.1.0", debug=settings.PORT)
 router = APIRouter(prefix="/shipments", tags=["shipments"])
 
 
@@ -91,7 +89,7 @@ async def update_shipment(
 
     if not database_shipment:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=" shipment not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=" shipments not found"
         )
 
     to_update = payload.model_dump(exclude_unset=True)

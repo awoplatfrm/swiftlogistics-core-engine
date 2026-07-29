@@ -1,0 +1,9 @@
+APP_NAME = "swiftlogistics core engine"
+ENVIROMENT = "development"
+DEBUG = False
+PORT = 8000
+DATABASE_URL="your database url"
+TOKEN_KEY="your jwt token key"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE = 30
+REFRESH_TOKEN_EXPIRE = 10080

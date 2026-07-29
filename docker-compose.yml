@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: logistic_db_container
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: logistic_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d logistic_db" ]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+  # 2. FastAPI Application Service
+  web:
+    build: .
+    container_name: logistic_api_container
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://postgres:secretpassword@db:5432/logistic_db"
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

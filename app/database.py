@@ -6,13 +6,9 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase
 from typing import AsyncGenerator
-import os
-from dotenv import load_dotenv
+from app.core.config import settings
 
-load_dotenv()
-
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///swiftlogistic.db")
-ASYNC_ENGINE = create_async_engine(DATABASE_URL, echo=True)
+ASYNC_ENGINE = create_async_engine(settings.DATABASE_URL, echo=True)
 
 session_local = async_sessionmaker(bind=ASYNC_ENGINE)
 
