@@ -46,13 +46,13 @@ class MerchantTokenOut(BaseModel):
 
 
 class Contact(BaseModel):
-    full_name: str = Field(..., min_length=2, example=" joe daniel")
-    email: Optional[str] = Field(None, example="example@email.com")
+    full_name: str = Field(..., min_length=2, json_schema_extra=" joe daniel")
+    email: Optional[str] = Field(None, json_schema_extra="example@email.com")
     phone_number: str = Field(..., min_length=11, max_length=14)
-    address: str = Field(..., example="12 Marina Road")
-    city: str = Field(..., example="Lagos Island")
-    state: str = Field(..., example="Lagos")
-    country: str = Field(..., example="Nigeria")
+    address: str = Field(..., json_schema_extra="12 Marina Road")
+    city: str = Field(..., json_schema_extra="Lagos Island")
+    state: str = Field(..., json_schema_extra="Lagos")
+    country: str = Field(..., json_schema_extra="Nigeria")
 
 
 class ContactIn(Contact):
@@ -79,11 +79,11 @@ class Dimensions(BaseModel):
 
 
 class ShipmentIn(BaseModel):
-    description: str = Field(..., min_length=2, example="a pair of shoe")
-    total_weight: float = Field(..., gt=0, example=3.5)
+    description: str = Field(..., min_length=2, json_schema_extra="a pair of shoe")
+    total_weight: float = Field(..., gt=0, json_schema_extra=3.5)
     dimensions: Dimensions
     parcels: List[ParcelItem]
-    status: Optional[str] = Field(default="pending", example="in_transit")
+    status: Optional[str] = Field(default="pending", json_schema_extra="in_transit")
     sender: ContactIn
     recipient: ContactIn
 

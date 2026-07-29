@@ -33,5 +33,5 @@ async def health_check():
     return {
         "status": "healthy",
         "app": settings.APP_NAME,
-        "environment": settings.ENVIRONMENT,
+        "environment": settings.ENVIROMENT,
     }
